@@ -1,0 +1,2 @@
+export interface ExpiringDocument{type:string;expiresAt:Date;required:boolean;}
+export function complianceStatus(documents:ExpiringDocument[],at=new Date()){const invalid=documents.filter(d=>d.required&&d.expiresAt.getTime()<at.getTime());const expiring=documents.filter(d=>d.required&&d.expiresAt.getTime()>=at.getTime()&&d.expiresAt.getTime()-at.getTime()<30*86400000);return {valid:invalid.length===0,invalid,expiring};}
