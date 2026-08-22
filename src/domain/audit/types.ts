@@ -1,0 +1,1 @@
+export interface AuditEvent { id:string; organizationId:string; actorId?:string; action:string; resourceType:string; resourceId:string; occurredAt:string; previousHash?:string; eventHash:string; metadata:Record<string,unknown>; }
