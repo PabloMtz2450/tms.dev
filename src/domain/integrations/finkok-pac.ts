@@ -31,7 +31,6 @@ export class FinkokPacAdapter implements PacAdapter {
       uuid: result.uuid,
       stampedXml: result.stampedXml,
       stampedAt: result.stampedAt,
-      pacRfc: 'FIN1203015JA',
     };
   }
 }
