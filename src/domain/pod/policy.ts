@@ -1,6 +1,6 @@
 export type PodRequirement = 'PHOTO'|'SIGNATURE'|'STAMP'|'DOCUMENT'|'BARCODE'|'GPS'|'TEMPERATURE';
-export type PodPolicy = { requirements: PodRequirement[]; allowException: boolean; exceptionRequiresSupervisor: boolean };
-export type PodSubmission = { captured: PodRequirement[]; exceptionReason?: string; supervisorApproved?: boolean };
+export type PodPolicy = { requirements: readonly PodRequirement[]; allowException: boolean; exceptionRequiresSupervisor: boolean };
+export type PodSubmission = { captured: readonly PodRequirement[]; exceptionReason?: string; supervisorApproved?: boolean };
 
 export function validatePod(policy: PodPolicy, submission: PodSubmission) {
   const missing = policy.requirements.filter(r => !submission.captured.includes(r));
