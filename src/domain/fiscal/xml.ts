@@ -1,0 +1,32 @@
+import type { Cfdi40CartaPorteDocument, FiscalLocation, Merchandise, TransportFigure } from './model';
+import { prevalidateCfdiCartaPorte } from './prevalidate';
+
+const escapeXml = (v: string | number | undefined) => String(v ?? '').replace(/[<>&"']/g, (c) => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;' }[c] as string));
+const a = (name: string, value: string | number | undefined) => value === undefined || value === '' ? '' : ` ${name}="${escapeXml(value)}"`;
+
+function locationXml(location: FiscalLocation): string {
+  const d = location.address;
+  return `<cartaporte31:Ubicacion${a('TipoUbicacion', location.type)}${a('IDUbicacion', location.id)}${a('RFCRemitenteDestinatario', location.rfc)}${a('FechaHoraSalidaLlegada', location.dateTime)}${location.type === 'Destino' ? a('DistanciaRecorrida', location.distanceKm) : ''}><cartaporte31:Domicilio${a('Calle', d.street)}${a('Localidad', d.locality)}${a('Municipio', d.municipality)}${a('Estado', d.state)}${a('Pais', d.country)}${a('CodigoPostal', d.postalCode)}/></cartaporte31:Ubicacion>`;
+}
+
+function merchandiseXml(m: Merchandise): string {
+  return `<cartaporte31:Mercancia${a('BienesTransp', m.goodsCode)}${a('Descripcion', m.description)}${a('Cantidad', m.quantity)}${a('ClaveUnidad', m.unitCode)}${a('PesoEnKg', m.weightKg)}${a('Dimensiones', m.dimensions)}${a('MaterialPeligroso', m.hazardous)}${a('CveMaterialPeligroso', m.hazardousMaterialCode)}${a('Embalaje', m.packagingCode)}${a('FraccionArancelaria', m.tariffFraction)}${a('UUIDComercioExt', m.uuidForeignTrade)}/>`;
+}
+
+function figureXml(f: TransportFigure): string {
+  return `<cartaporte31:TiposFigura${a('TipoFigura', f.figureType)}${a('RFCFigura', f.rfc)}${a('NumLicencia', f.licenseNumber)}${a('NombreFigura', f.name)}${a('NumRegIdTribFigura', f.foreignTaxId)}/>`;
+}
+
+export function generateCfdi40CartaPorte31Xml(doc: Cfdi40CartaPorteDocument): string {
+  const validation = prevalidateCfdiCartaPorte(doc);
+  const blocking = validation.issues.filter((i) => i.severity === 'ERROR');
+  if (blocking.length) throw new Error(`CFDI bloqueado por prevalidación: ${blocking.map((x) => `${x.code}:${x.field}`).join(', ')}`);
+
+  const ccp = doc.cartaPorte;
+  const road = ccp.roadTransport;
+  const totalWeight = ccp.merchandise.reduce((sum, m) => sum + m.weightKg, 0);
+  const trailers = (road.trailers ?? []).length ? `<cartaporte31:Remolques>${road.trailers!.map((r) => `<cartaporte31:Remolque${a('SubTipoRem', r.subtype)}${a('Placa', r.plate)}/>`).join('')}</cartaporte31:Remolques>` : '';
+  const international = ccp.internationalTransport === 'Sí' ? `${a('EntradaSalidaMerc', ccp.entryExit)}${a('PaisOrigenDestino', ccp.countryOriginDestination)}${a('ViaEntradaSalida', ccp.transportVia)}` : '';
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:cartaporte31="http://www.sat.gob.mx/CartaPorte31" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd http://www.sat.gob.mx/CartaPorte31 http://www.sat.gob.mx/sitio_internet/cfd/CartaPorte/CartaPorte31.xsd" Version="4.0"${a('Serie', doc.series)}${a('Folio', doc.folio)}${a('Fecha', doc.issueDate)}${a('Sello', doc.seal)}${a('NoCertificado', doc.certificateNumber)}${a('Certificado', doc.certificateBase64)}${a('SubTotal', doc.subtotal.toFixed(2))}${a('Moneda', doc.currency)}${a('Total', doc.total.toFixed(2))}${a('TipoDeComprobante', doc.type)}${a('Exportacion', doc.exportCode)}${a('LugarExpedicion', doc.expeditionPostalCode)}><cfdi:Emisor${a('Rfc', doc.issuer.rfc)}${a('Nombre', doc.issuer.name)}${a('RegimenFiscal', doc.issuer.fiscalRegime)}/><cfdi:Receptor${a('Rfc', doc.receiver.rfc)}${a('Nombre', doc.receiver.name)}${a('DomicilioFiscalReceptor', doc.receiver.postalCode)}${a('RegimenFiscalReceptor', doc.receiver.fiscalRegime)}${a('UsoCFDI', doc.receiver.cfdiUse)}/><cfdi:Conceptos><cfdi:Concepto ClaveProdServ="78101800" Cantidad="1" ClaveUnidad="E48" Descripcion="Traslado de mercancías" ValorUnitario="0.00" Importe="0.00" ObjetoImp="01"/></cfdi:Conceptos><cfdi:Complemento><cartaporte31:CartaPorte Version="3.1"${a('IdCCP', ccp.idCCP)}${a('TranspInternac', ccp.internationalTransport)}${international}${a('TotalDistRec', ccp.totalDistanceKm)}><cartaporte31:Ubicaciones>${ccp.locations.map(locationXml).join('')}</cartaporte31:Ubicaciones><cartaporte31:Mercancias${a('PesoBrutoTotal', totalWeight.toFixed(3))}${a('UnidadPeso', 'KGM')}${a('NumTotalMercancias', ccp.merchandise.length)}>${ccp.merchandise.map(merchandiseXml).join('')}<cartaporte31:Autotransporte${a('PermSCT', road.permitType)}${a('NumPermisoSCT', road.permitNumber)}><cartaporte31:IdentificacionVehicular${a('ConfigVehicular', road.vehicleConfiguration)}${a('PesoBrutoVehicular', totalWeight.toFixed(3))}${a('PlacaVM', road.plate)}${a('AnioModeloVM', road.modelYear)}/><cartaporte31:Seguros${a('AseguraRespCivil', road.civilLiabilityInsurer)}${a('PolizaRespCivil', road.civilLiabilityPolicy)}${a('AseguraMedAmbiente', road.environmentalInsurer)}${a('PolizaMedAmbiente', road.environmentalPolicy)}${a('AseguraCarga', road.cargoInsurer)}${a('PolizaCarga', road.cargoPolicy)}/>${trailers}</cartaporte31:Autotransporte></cartaporte31:Mercancias><cartaporte31:FiguraTransporte>${ccp.figures.map(figureXml).join('')}</cartaporte31:FiguraTransporte></cartaporte31:CartaPorte></cfdi:Complemento></cfdi:Comprobante>`;
+}
