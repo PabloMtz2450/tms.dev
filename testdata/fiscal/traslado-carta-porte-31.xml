@@ -11,7 +11,7 @@
         <cartaporte31:Ubicacion TipoUbicacion="Origen" IDUbicacion="OR000001" RFCRemitenteDestinatario="AAA010101AAA" FechaHoraSalidaLlegada="2026-08-21T20:15:00">
           <cartaporte31:Domicilio Calle="Origen Demo" Municipio="015" Estado="CMX" Pais="MEX" CodigoPostal="06000"/>
         </cartaporte31:Ubicacion>
-        <cartaporte31:Ubicacion TipoUbicacion="Destino" IDUbicacion="DE000001" RFCRemitenteDestinatario="BBB010101BBB" FechaHoraSalidaLlegada="2026-08-21T21:30:00" DistanciaRecorrida="22">
+        <cartaporte31:Ubicacion TipoUbicacion="Destino" IDUbicacion="DE000001" RFCRemitenteDestinatario="BBB010101BB0" FechaHoraSalidaLlegada="2026-08-21T21:30:00" DistanciaRecorrida="22">
           <cartaporte31:Domicilio Calle="Destino Demo" Municipio="014" Estado="CMX" Pais="MEX" CodigoPostal="03100"/>
         </cartaporte31:Ubicacion>
       </cartaporte31:Ubicaciones>
@@ -23,7 +23,7 @@
         </cartaporte31:Autotransporte>
       </cartaporte31:Mercancias>
       <cartaporte31:FiguraTransporte>
-        <cartaporte31:TiposFigura TipoFigura="01" RFCFigura="CCC010101CCC" NumLicencia="LIC-DEMO-001" NombreFigura="OPERADOR DEMO"/>
+        <cartaporte31:TiposFigura TipoFigura="01" RFCFigura="CCCC010101CC0" NumLicencia="LIC-DEMO-001" NombreFigura="OPERADOR DEMO"/>
       </cartaporte31:FiguraTransporte>
     </cartaporte31:CartaPorte>
   </cfdi:Complemento>
