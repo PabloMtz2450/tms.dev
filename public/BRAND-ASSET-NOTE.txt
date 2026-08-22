@@ -1,0 +1,1 @@
+Official brand asset supplied by product owner: XOLUM Symbol, black, transparent. The UI must use /xolum-symbol.png without redrawing or altering the mark. Source master: XOLUM_Symbol_Black_Transparent_8K.png.
