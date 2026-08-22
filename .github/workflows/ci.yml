@@ -10,8 +10,15 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: npm install
       - run: npm run security:audit
       - run: npm run db:generate
       - run: npm run typecheck
+      - name: Install XSD validator
+        run: python -m pip install --disable-pip-version-check xmlschema==4.2.0
+      - name: Validate CFDI 4.0 + Carta Porte 3.1 against SAT XSD
+        run: python scripts/validate_sat_xsd.py
       - run: npm run build
