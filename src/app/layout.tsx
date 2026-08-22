@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import './globals.css';
 import './product.css';
+import './presentation.css';
 
 export const metadata = { title: 'TMS XOLUM', description: 'Soluciones que realmente ayudan para transporte y última milla.' };
 
