@@ -44,6 +44,7 @@ export type RoadTransport = {
   vehicleConfiguration: string;
   plate: string;
   modelYear: number;
+  grossVehicleWeightKg?: number;
   civilLiabilityInsurer: string;
   civilLiabilityPolicy: string;
   environmentalInsurer?: string;
@@ -59,6 +60,16 @@ export type TransportFigure = {
   foreignTaxId?: string;
   name?: string;
   licenseNumber?: string;
+};
+
+export type TransportServiceConcept = {
+  productServiceCode: string;
+  quantity: number;
+  unitCode: string;
+  description: string;
+  unitValue: number;
+  amount: number;
+  taxObject: '01' | '02' | '03' | '04';
 };
 
 export type CartaPorte31 = {
@@ -88,6 +99,7 @@ export type Cfdi40CartaPorteDocument = {
   exportCode: string;
   issuer: FiscalParty;
   receiver: FiscalParty & { cfdiUse: string };
+  transportService?: TransportServiceConcept;
   certificateNumber?: string;
   certificateBase64?: string;
   seal?: string;
