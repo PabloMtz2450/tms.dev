@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
@@ -17,7 +18,7 @@ const navGroups = [
 export function AppShell({ children, title, subtitle }: { children: ReactNode; title: string; subtitle: string }) {
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><div className="brand-mark">X</div><div><strong>TMS XOLUM</strong><span>Soluciones que realmente ayudan.</span></div></div>
+      <div className="brand"><div className="brand-mark brand-logo"><Image src="/xolum-symbol.png" alt="XOLUM" width={42} height={42} priority /></div><div><strong>TMS XOLUM</strong><span>Soluciones que realmente ayudan.</span></div></div>
       <nav>{navGroups.map(group => <div className="nav-group" key={group.label}><span className="nav-group-label">{group.label}</span>{group.items.map(([href, icon, label]) => <Link key={href} href={href}><span className="nav-icon">{icon}</span>{label}</Link>)}</div>)}</nav>
       <div className="sidebar-card"><span className="status-dot" /> <strong>Operación estable</strong><p>Lo correcto avanza solo · 8 excepciones</p></div>
       <div className="user-chip"><div>PM</div><span><strong>Administrador</strong><small>Operación México</small></span></div>
