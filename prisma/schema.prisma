@@ -67,8 +67,6 @@ model Organization {
   fiscalDocuments FiscalDocument[]
   auditEvents     AuditEvent[]
   createdAt       DateTime         @default(now())
-
-  @@unique([id, id])
 }
 
 model User {
@@ -81,16 +79,16 @@ model User {
 }
 
 model Session {
-  id             String        @id @default(cuid())
-  tokenHash      String        @unique
+  id             String       @id @default(cuid())
+  tokenHash      String       @unique
   userId         String
   organizationId String
   expiresAt      DateTime
   revokedAt      DateTime?
-  createdAt      DateTime      @default(now())
-  lastSeenAt     DateTime      @default(now())
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  lastSeenAt     DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
   @@index([organizationId, expiresAt])
@@ -198,26 +196,26 @@ model Stop {
 }
 
 model FiscalDocument {
-  id                String               @id @default(cuid())
-  organizationId    String
-  idempotencyKey    String
-  documentType      String
-  status            FiscalDocumentStatus @default(DRAFT)
-  sourceFingerprint String?
-  unsignedXmlHash   String?
-  signedXmlHash     String?
-  stampedXmlHash    String?
-  uuid              String?
+  id                  String               @id @default(cuid())
+  organizationId      String
+  idempotencyKey      String
+  documentType        String
+  status              FiscalDocumentStatus @default(DRAFT)
+  sourceFingerprint   String?
+  unsignedXmlHash     String?
+  signedXmlHash       String?
+  stampedXmlHash      String?
+  uuid                String?
   finkokWorkProcessId String?
-  lastErrorCode     String?
-  lastErrorMessage  String?
-  recoveryAttempts  Int                  @default(0)
-  xmlObjectKey      String?
-  pdfObjectKey      String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  stampedAt         DateTime?
-  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lastErrorCode       String?
+  lastErrorMessage    String?
+  recoveryAttempts    Int                  @default(0)
+  xmlObjectKey        String?
+  pdfObjectKey        String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  stampedAt           DateTime?
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, idempotencyKey])
   @@unique([organizationId, uuid])
