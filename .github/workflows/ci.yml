@@ -31,14 +31,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install Node dependencies
-        run: npm install
-      - name: Emit package lock for repository pinning
-        run: |
-          echo 'PACKAGE_LOCK_BASE64_BEGIN'
-          base64 -w0 package-lock.json
-          echo
-          echo 'PACKAGE_LOCK_BASE64_END'
+      - name: Install pinned Node dependencies
+        run: npm install --ignore-scripts=false
       - run: npm run security:audit
       - run: npm run db:generate
       - name: Validate Prisma schema
