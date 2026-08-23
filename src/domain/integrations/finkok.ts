@@ -1,3 +1,5 @@
+import { XMLParser } from 'fast-xml-parser';
+
 export type FinkokEnvironment = 'demo' | 'production';
 
 export type FinkokConfig = {
@@ -25,7 +27,6 @@ export type FinkokStampResult = {
   satSeal?: string;
   satCertificateNumber?: string;
   incidences: FinkokIncidence[];
-  rawSoap: string;
 };
 
 const WSDL = {
@@ -39,7 +40,16 @@ const ENDPOINT = {
 } as const;
 
 const MAX_XML_BYTES = 1_000_000;
+const MAX_SOAP_BYTES = 2_500_000;
 const SUCCESS_STATUS = 'comprobante timbrado satisfactoriamente';
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  removeNSPrefix: true,
+  processEntities: false,
+  parseTagValue: false,
+  parseAttributeValue: false,
+  trimValues: true,
+});
 
 function xmlEscape(value: string): string {
   return value.replace(/[<>&"']/g, (char) => ({
@@ -47,34 +57,65 @@ function xmlEscape(value: string): string {
   }[char] as string));
 }
 
-function decodeEntities(value: string): string {
-  return value
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+function rejectDangerousXml(xml: string, maxBytes: number, label: string): void {
+  const bytes = Buffer.byteLength(xml, 'utf8');
+  if (bytes <= 0) throw new Error(`${label}_EMPTY`);
+  if (bytes > maxBytes) throw new Error(`${label}_TOO_LARGE:${bytes}`);
+  if (/<!DOCTYPE/i.test(xml) || /<!ENTITY/i.test(xml)) throw new Error(`${label}_DTD_FORBIDDEN`);
 }
 
-function tag(xml: string, localName: string): string | undefined {
-  const pattern = new RegExp(`<(?:[\\w.-]+:)?${localName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?${localName}>`, 'i');
-  const match = xml.match(pattern);
-  if (!match) return undefined;
-  const body = match[1].trim();
-  const cdata = body.match(/^<!\[CDATA\[([\s\S]*)\]\]>$/i);
-  return decodeEntities((cdata?.[1] ?? body).trim());
+function toText(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return undefined;
 }
 
-function allBlocks(xml: string, localName: string): string[] {
-  const pattern = new RegExp(`<(?:[\\w.-]+:)?${localName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?${localName}>`, 'gi');
-  return Array.from(xml.matchAll(pattern), (m) => m[0]);
+function findFirst(root: unknown, key: string): string | undefined {
+  if (!root || typeof root !== 'object') return undefined;
+  if (Array.isArray(root)) {
+    for (const item of root) {
+      const found = findFirst(item, key);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+  const record = root as Record<string, unknown>;
+  if (key in record) {
+    const direct = toText(record[key]);
+    if (direct !== undefined) return direct;
+  }
+  for (const value of Object.values(record)) {
+    const found = findFirst(value, key);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
-function parseIncidences(soap: string): FinkokIncidence[] {
-  return allBlocks(soap, 'Incidencia').map((block) => ({
-    id: tag(block, 'IdIncidencia'),
-    code: tag(block, 'CodigoError'),
-    workProcessId: tag(block, 'WorkProcessId'),
-    message: tag(block, 'MensajeIncidencia'),
-    extraInfo: tag(block, 'ExtraInfo'),
-    registeredAt: tag(block, 'FechaRegistro'),
+function collectObjects(root: unknown, key: string, out: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (!root || typeof root !== 'object') return out;
+  if (Array.isArray(root)) {
+    for (const item of root) collectObjects(item, key, out);
+    return out;
+  }
+  const record = root as Record<string, unknown>;
+  if (key in record) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      for (const item of value) if (item && typeof item === 'object') out.push(item as Record<string, unknown>);
+    } else if (value && typeof value === 'object') out.push(value as Record<string, unknown>);
+  }
+  for (const value of Object.values(record)) collectObjects(value, key, out);
+  return out;
+}
+
+function parseIncidences(parsed: unknown): FinkokIncidence[] {
+  return collectObjects(parsed, 'Incidencia').map((item) => ({
+    id: findFirst(item, 'IdIncidencia'),
+    code: findFirst(item, 'CodigoError'),
+    workProcessId: findFirst(item, 'WorkProcessId'),
+    message: findFirst(item, 'MensajeIncidencia'),
+    extraInfo: findFirst(item, 'ExtraInfo'),
+    registeredAt: findFirst(item, 'FechaRegistro'),
   }));
 }
 
@@ -83,13 +124,9 @@ export function getFinkokWsdl(environment: FinkokEnvironment): string {
 }
 
 export function validateFinkokPayload(xml: string): void {
-  const bytes = Buffer.byteLength(xml, 'utf8');
-  if (!xml.trim().startsWith('<?xml') && !xml.includes('<cfdi:Comprobante')) {
+  rejectDangerousXml(xml, MAX_XML_BYTES - 1, 'FINKOK_XML');
+  if (!xml.includes('<cfdi:Comprobante') && !xml.includes(':Comprobante')) {
     throw new Error('FINKOK_XML_INVALID: el payload no parece ser un CFDI XML.');
-  }
-  if (bytes <= 0) throw new Error('FINKOK_XML_EMPTY: no hay XML para timbrar.');
-  if (bytes >= MAX_XML_BYTES) {
-    throw new Error(`FINKOK_XML_TOO_LARGE: ${bytes} bytes. Finkok documenta un límite de 1 MB por XML.`);
   }
 }
 
@@ -99,16 +136,24 @@ function buildStampEnvelope(xml: string, config: FinkokConfig): string {
 }
 
 export function parseFinkokStampResponse(rawSoap: string): FinkokStampResult {
-  const codEstatus = tag(rawSoap, 'CodEstatus');
-  const uuid = tag(rawSoap, 'UUID') ?? tag(rawSoap, 'Uuid');
-  const stampedXml = tag(rawSoap, 'xml');
-  const incidences = parseIncidences(rawSoap);
-  const fault = tag(rawSoap, 'faultstring');
+  rejectDangerousXml(rawSoap, MAX_SOAP_BYTES, 'FINKOK_SOAP');
+  let parsed: unknown;
+  try {
+    parsed = parser.parse(rawSoap);
+  } catch {
+    throw new Error('FINKOK_SOAP_MALFORMED');
+  }
+
+  const codEstatus = findFirst(parsed, 'CodEstatus');
+  const uuid = findFirst(parsed, 'UUID') ?? findFirst(parsed, 'Uuid');
+  const stampedXml = findFirst(parsed, 'xml');
+  const incidences = parseIncidences(parsed);
+  const fault = findFirst(parsed, 'faultstring');
   const normalizedStatus = codEstatus?.trim().toLowerCase();
   const ok = normalizedStatus === SUCCESS_STATUS && Boolean(uuid && stampedXml);
 
   if (fault && !codEstatus) {
-    incidences.push({ code: tag(rawSoap, 'faultcode') ?? 'SOAP_FAULT', message: fault });
+    incidences.push({ code: findFirst(parsed, 'faultcode') ?? 'SOAP_FAULT', message: fault });
   }
 
   return {
@@ -116,11 +161,10 @@ export function parseFinkokStampResponse(rawSoap: string): FinkokStampResult {
     codEstatus,
     uuid,
     stampedXml,
-    stampedAt: tag(rawSoap, 'Fecha'),
-    satSeal: tag(rawSoap, 'SatSeal'),
-    satCertificateNumber: tag(rawSoap, 'NoCertificadoSAT') ?? tag(rawSoap, 'NoCertificadoPac'),
+    stampedAt: findFirst(parsed, 'Fecha'),
+    satSeal: findFirst(parsed, 'SatSeal'),
+    satCertificateNumber: findFirst(parsed, 'NoCertificadoSAT') ?? findFirst(parsed, 'NoCertificadoPac'),
     incidences,
-    rawSoap,
   };
 }
 
@@ -140,6 +184,7 @@ export async function stampWithFinkok(xml: string, config: FinkokConfig): Promis
       body: buildStampEnvelope(xml, config),
       signal: controller.signal,
       cache: 'no-store',
+      redirect: 'error',
     });
     const rawSoap = await response.text();
     if (!response.ok && !rawSoap) throw new Error(`FINKOK_HTTP_${response.status}`);
@@ -151,10 +196,12 @@ export async function stampWithFinkok(xml: string, config: FinkokConfig): Promis
 
 export function finkokConfigFromEnv(env: NodeJS.ProcessEnv = process.env): FinkokConfig {
   const environment = env.FINKOK_ENV === 'production' ? 'production' : 'demo';
+  const timeoutMs = Number(env.FINKOK_TIMEOUT_MS ?? 30000);
+  if (!Number.isFinite(timeoutMs) || timeoutMs < 1000 || timeoutMs > 120000) throw new Error('FINKOK_TIMEOUT_INVALID');
   return {
     environment,
     username: env.FINKOK_USERNAME ?? '',
     password: env.FINKOK_PASSWORD ?? '',
-    timeoutMs: Number(env.FINKOK_TIMEOUT_MS ?? 30000),
+    timeoutMs,
   };
 }
