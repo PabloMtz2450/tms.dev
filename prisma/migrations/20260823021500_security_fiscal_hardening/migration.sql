@@ -66,11 +66,11 @@ ALTER TABLE "Stop" DROP CONSTRAINT IF EXISTS "Stop_shipmentId_fkey";
 ALTER TABLE "Shipment" ADD CONSTRAINT "Shipment_organizationId_customerId_fkey"
   FOREIGN KEY ("organizationId", "customerId") REFERENCES "Customer"("organizationId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "Route" ADD CONSTRAINT "Route_organizationId_vehicleId_fkey"
-  FOREIGN KEY ("organizationId", "vehicleId") REFERENCES "Vehicle"("organizationId", "id") ON DELETE SET NULL ON UPDATE CASCADE;
+  FOREIGN KEY ("organizationId", "vehicleId") REFERENCES "Vehicle"("organizationId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "Route" ADD CONSTRAINT "Route_organizationId_driverId_fkey"
-  FOREIGN KEY ("organizationId", "driverId") REFERENCES "Driver"("organizationId", "id") ON DELETE SET NULL ON UPDATE CASCADE;
+  FOREIGN KEY ("organizationId", "driverId") REFERENCES "Driver"("organizationId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "Stop" ADD CONSTRAINT "Stop_organizationId_routeId_fkey"
-  FOREIGN KEY ("organizationId", "routeId") REFERENCES "Route"("organizationId", "id") ON DELETE SET NULL ON UPDATE CASCADE;
+  FOREIGN KEY ("organizationId", "routeId") REFERENCES "Route"("organizationId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "Stop" ADD CONSTRAINT "Stop_organizationId_shipmentId_fkey"
   FOREIGN KEY ("organizationId", "shipmentId") REFERENCES "Shipment"("organizationId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -117,7 +117,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "FiscalDocument_organizationId_idempotencyKey_
 CREATE UNIQUE INDEX IF NOT EXISTS "FiscalDocument_organizationId_uuid_key" ON "FiscalDocument"("organizationId", "uuid");
 CREATE INDEX IF NOT EXISTS "FiscalDocument_organizationId_status_updatedAt_idx" ON "FiscalDocument"("organizationId", "status", "updatedAt");
 CREATE INDEX IF NOT EXISTS "FiscalDocument_sourceFingerprint_idx" ON "FiscalDocument"("sourceFingerprint");
-ALTER TABLE "FiscalDocument" ADD CONSTRAINT "FiscalDocument_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "FiscalDocument" ADD CONSTRAINT "FiscalDocument_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 CREATE TABLE IF NOT EXISTS "AuditEvent" (
   "id" TEXT NOT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS "AuditEvent" (
 CREATE INDEX IF NOT EXISTS "AuditEvent_organizationId_occurredAt_idx" ON "AuditEvent"("organizationId", "occurredAt");
 CREATE INDEX IF NOT EXISTS "AuditEvent_organizationId_resourceType_resourceId_occurredAt_idx" ON "AuditEvent"("organizationId", "resourceType", "resourceId", "occurredAt");
 CREATE INDEX IF NOT EXISTS "AuditEvent_actorId_occurredAt_idx" ON "AuditEvent"("actorId", "occurredAt");
-ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 CREATE TABLE IF NOT EXISTS "RateLimitBucket" (
   "key" TEXT NOT NULL,
