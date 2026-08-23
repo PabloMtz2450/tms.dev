@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:cartaporte31="http://www.sat.gob.mx/CartaPorte31" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 https://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd http://www.sat.gob.mx/CartaPorte31 https://www.sat.gob.mx/sitio_internet/cfd/CartaPorte/CartaPorte31.xsd" Version="4.0" Serie="T" Folio="1001" Fecha="2026-08-21T20:00:00" Sello="QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=" NoCertificado="00001000000500000000" Certificado="QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=" SubTotal="0" Moneda="XXX" Total="0" TipoDeComprobante="T" Exportacion="01" LugarExpedicion="06000">
+  <cfdi:Emisor Rfc="AAA010101AAA" Nombre="EMPRESA DEMO SA DE CV" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="AAA010101AAA" Nombre="EMPRESA DEMO SA DE CV" DomicilioFiscalReceptor="06000" RegimenFiscalReceptor="601" UsoCFDI="S01"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="78101800" Cantidad="1" ClaveUnidad="E48" Descripcion="Traslado de mercancías" ValorUnitario="0" Importe="0" ObjetoImp="01"/>
+  </cfdi:Conceptos>
+  <cfdi:Complemento>
+    <cartaporte31:CartaPorte Version="3.1" IdCCP="CCC12345-1234-1234-1234-123456789ABC" TranspInternac="No" TotalDistRec="22">
+      <cartaporte31:Ubicaciones>
+        <cartaporte31:Ubicacion TipoUbicacion="Origen" IDUbicacion="OR000001" RFCRemitenteDestinatario="AAA010101AAA" FechaHoraSalidaLlegada="2026-08-21T20:15:00">
+          <cartaporte31:Domicilio Calle="Origen Demo" Municipio="015" Estado="CMX" Pais="MEX" CodigoPostal="06000"/>
+        </cartaporte31:Ubicacion>
+        <cartaporte31:Ubicacion TipoUbicacion="Destino" IDUbicacion="DE000001" RFCRemitenteDestinatario="BBB010101BB0" FechaHoraSalidaLlegada="2026-08-21T21:30:00" DistanciaRecorrida="22">
+          <cartaporte31:Domicilio Calle="Destino Demo" Municipio="014" Estado="CMX" Pais="MEX" CodigoPostal="03100"/>
+        </cartaporte31:Ubicacion>
+      </cartaporte31:Ubicaciones>
+      <cartaporte31:Mercancias PesoBrutoTotal="125" UnidadPeso="KGM" NumTotalMercancias="1">
+        <cartaporte31:Mercancia BienesTransp="14111507" Descripcion="Material demo" Cantidad="10" ClaveUnidad="H87" PesoEnKg="125" MaterialPeligroso="No"/>
+        <cartaporte31:Autotransporte PermSCT="TPAF01" NumPermisoSCT="PERMISO-DEMO">
+          <cartaporte31:IdentificacionVehicular ConfigVehicular="C2" PesoBrutoVehicular="3.5" PlacaVM="ABC123A" AnioModeloVM="2025"/>
+          <cartaporte31:Seguros AseguraRespCivil="ASEGURADORA DEMO" PolizaRespCivil="POLIZA-DEMO"/>
+        </cartaporte31:Autotransporte>
+      </cartaporte31:Mercancias>
+      <cartaporte31:FiguraTransporte>
+        <cartaporte31:TiposFigura TipoFigura="01" RFCFigura="CCCC010101CC0" NumLicencia="LIC-DEMO-001" NombreFigura="OPERADOR DEMO"/>
+      </cartaporte31:FiguraTransporte>
+    </cartaporte31:CartaPorte>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

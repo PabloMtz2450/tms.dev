@@ -5,13 +5,52 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: tms_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d tms_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tms_ci
+      APP_URL: http://localhost:3000
+      APP_ENV: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-      - run: npm install
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Node dependencies
+        run: npm install --ignore-scripts=false
+      - run: npm run security:audit
       - run: npm run db:generate
+      - name: Validate Prisma schema
+        run: npx prisma validate
+      - name: Apply migrations on clean PostgreSQL
+        run: npm run db:migrate
+      - name: Verify migration state
+        run: npx prisma migrate status
       - run: npm run typecheck
+      - run: npm test
+      - name: Test tenant isolation, authentication and fiscal idempotency
+        run: npm run test:db
+      - name: Load local demo seed
+        run: npm run db:seed:local
+      - name: Verify local demo seed
+        run: npm run test:seed
+      - name: Install XSD validator
+        run: python -m pip install --disable-pip-version-check -r requirements-fiscal.txt
+      - name: Validate CFDI 4.0 + Carta Porte 3.1 against SAT XSD
+        run: python scripts/validate_sat_xsd.py
       - run: npm run build

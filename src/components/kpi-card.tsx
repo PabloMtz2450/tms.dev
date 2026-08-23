@@ -1,0 +1,1 @@
+export function KpiCard({label,value,delta,tone='neutral'}:{label:string;value:string;delta:string;tone?:'neutral'|'good'|'warn'|'bad'}){return <article className={`kpi ${tone}`}><div className="kpi-head"><span>{label}</span><span className="trend">{delta}</span></div><strong>{value}</strong><div className="spark"><i/><i/><i/><i/><i/><i/></div></article>}

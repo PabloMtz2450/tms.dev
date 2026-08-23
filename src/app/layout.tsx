@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 import './globals.css';
+import './product.css';
+import './presentation.css';
+import './presentation-fixes.css';
 
-export const metadata = { title: 'TMS.dev', description: 'Logistics Operating System' };
+export const metadata = { title: 'TMS XOLUM', description: 'Soluciones que realmente ayudan para transporte y última milla.' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return <html lang="es"><body>{children}</body></html>;
