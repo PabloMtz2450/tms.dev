@@ -45,6 +45,10 @@ jobs:
       - run: npm test
       - name: Test tenant isolation, authentication and fiscal idempotency
         run: npm run test:db
+      - name: Load local demo seed
+        run: npm run db:seed:local
+      - name: Verify local demo seed
+        run: npm run test:seed
       - name: Install XSD validator
         run: python -m pip install --disable-pip-version-check -r requirements-fiscal.txt
       - name: Validate CFDI 4.0 + Carta Porte 3.1 against SAT XSD
