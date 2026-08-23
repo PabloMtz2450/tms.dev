@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     assertTrustedOrigin(request);
     const auth = await requireAuth(request);
     authorize(auth, 'FISCAL_PREVALIDATE');
-    enforceRateLimit(`fiscal:prevalidate:${auth.organizationId}:${auth.userId}:${clientAddress(request)}`, 60, 60_000);
+    await enforceRateLimit(`fiscal:prevalidate:${auth.organizationId}:${auth.userId}:${clientAddress(request)}`, 60, 60_000);
 
     const payload = fiscalDocumentHttpSchema.parse(await request.json());
     assertTenant(auth, payload.organizationId);
