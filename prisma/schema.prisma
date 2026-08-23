@@ -70,12 +70,19 @@ model Organization {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  email       String       @unique
-  name        String?
-  memberships Membership[]
-  sessions    Session[]
-  createdAt   DateTime     @default(now())
+  id               String       @id @default(cuid())
+  email            String       @unique
+  name             String?
+  passwordHash     String?
+  passwordSalt     String?
+  failedLoginCount Int          @default(0)
+  lockedUntil      DateTime?
+  memberships      Membership[]
+  sessions         Session[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([email, lockedUntil])
 }
 
 model Session {
@@ -239,4 +246,13 @@ model AuditEvent {
   @@index([organizationId, occurredAt])
   @@index([organizationId, resourceType, resourceId, occurredAt])
   @@index([actorId, occurredAt])
+}
+
+model RateLimitBucket {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
