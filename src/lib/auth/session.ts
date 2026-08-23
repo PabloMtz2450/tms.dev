@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 
 export const SESSION_COOKIE = 'xolum_session';
 const DEFAULT_TTL_SECONDS = 60 * 60 * 8;
+const LAST_SEEN_WRITE_INTERVAL_MS = 10 * 60_000;
 
 export type AuthContext = {
   sessionId: string;
@@ -16,11 +17,11 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function readCookie(request: Request, name: string): string | undefined {
+export function readSessionToken(request: Request): string | undefined {
   const cookie = request.headers.get('cookie') ?? '';
   for (const part of cookie.split(';')) {
     const [key, ...rest] = part.trim().split('=');
-    if (key === name) return decodeURIComponent(rest.join('='));
+    if (key === SESSION_COOKIE) return decodeURIComponent(rest.join('='));
   }
   return undefined;
 }
@@ -49,12 +50,12 @@ export async function revokeSession(token: string): Promise<void> {
 }
 
 export async function authenticateRequest(request: Request): Promise<AuthContext | null> {
-  const token = readCookie(request, SESSION_COOKIE);
+  const token = readSessionToken(request);
   if (!token) return null;
 
   const session = await db.session.findUnique({
     where: { tokenHash: hashToken(token) },
-    select: { id: true, userId: true, organizationId: true, expiresAt: true, revokedAt: true },
+    select: { id: true, userId: true, organizationId: true, expiresAt: true, revokedAt: true, lastSeenAt: true },
   });
   if (!session || session.revokedAt || session.expiresAt <= new Date()) return null;
 
@@ -64,7 +65,9 @@ export async function authenticateRequest(request: Request): Promise<AuthContext
   });
   if (!membership) return null;
 
-  await db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } });
+  if (Date.now() - session.lastSeenAt.getTime() >= LAST_SEEN_WRITE_INTERVAL_MS) {
+    await db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } });
+  }
   return { sessionId: session.id, userId: session.userId, organizationId: session.organizationId, role: membership.role };
 }
 
@@ -74,6 +77,14 @@ export async function requireAuth(request: Request): Promise<AuthContext> {
   return context;
 }
 
+function secureAttribute(): string {
+  return process.env.NODE_ENV === 'production' ? '; Secure' : '';
+}
+
 export function sessionCookie(token: string, expiresAt: Date): string {
-  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expiresAt.toUTCString()}`;
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly${secureAttribute()}; SameSite=Lax; Expires=${expiresAt.toUTCString()}`;
+}
+
+export function clearSessionCookie(): string {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly${secureAttribute()}; SameSite=Lax; Max-Age=0`;
 }
