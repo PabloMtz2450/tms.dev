@@ -128,7 +128,7 @@ model Customer {
   organizationId String
   code           String
   name           String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   shipments      Shipment[]
 
   @@unique([organizationId, code])
@@ -141,7 +141,7 @@ model Vehicle {
   organizationId String
   plate          String
   label          String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   routes         Route[]
 
   @@unique([organizationId, plate])
@@ -153,7 +153,7 @@ model Driver {
   id             String       @id @default(cuid())
   organizationId String
   name           String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   routes         Route[]
 
   @@unique([organizationId, id])
@@ -166,8 +166,8 @@ model Shipment {
   customerId     String
   reference      String
   status         ShipmentStatus @default(DRAFT)
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customer       Customer       @relation(fields: [organizationId, customerId], references: [organizationId, id])
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer       Customer       @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict)
   stops          Stop[]
   createdAt      DateTime       @default(now())
 
@@ -184,9 +184,9 @@ model Route {
   status         RouteStatus  @default(DRAFT)
   vehicleId      String?
   driverId       String?
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vehicle        Vehicle?     @relation(fields: [organizationId, vehicleId], references: [organizationId, id])
-  driver         Driver?      @relation(fields: [organizationId, driverId], references: [organizationId, id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  vehicle        Vehicle?     @relation(fields: [organizationId, vehicleId], references: [organizationId, id], onDelete: Restrict)
+  driver         Driver?      @relation(fields: [organizationId, driverId], references: [organizationId, id], onDelete: Restrict)
   stops          Stop[]
   createdAt      DateTime     @default(now())
 
@@ -204,8 +204,8 @@ model Stop {
   shipmentId     String
   sequence       Int?
   address        String
-  route          Route?   @relation(fields: [organizationId, routeId], references: [organizationId, id])
-  shipment       Shipment @relation(fields: [organizationId, shipmentId], references: [organizationId, id])
+  route          Route?   @relation(fields: [organizationId, routeId], references: [organizationId, id], onDelete: Restrict)
+  shipment       Shipment @relation(fields: [organizationId, shipmentId], references: [organizationId, id], onDelete: Restrict)
 
   @@index([organizationId, routeId, sequence])
   @@index([organizationId, shipmentId])
@@ -231,7 +231,7 @@ model FiscalDocument {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   stampedAt           DateTime?
-  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
   @@unique([organizationId, idempotencyKey])
   @@unique([organizationId, uuid])
@@ -250,7 +250,7 @@ model AuditEvent {
   previousHash   String?
   eventHash      String
   metadata       Json
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, occurredAt])
   @@index([organizationId, resourceType, resourceId, occurredAt])
