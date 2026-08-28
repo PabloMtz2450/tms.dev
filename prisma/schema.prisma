@@ -1,20 +1,198 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum MembershipRole { OWNER ADMIN PLANNER DISPATCHER DRIVER FINANCE AUDITOR VIEWER }
-enum ShipmentStatus { DRAFT READY PLANNED LOADED IN_TRANSIT DELIVERED PARTIAL REJECTED RETURNED CANCELLED }
-enum RouteStatus { DRAFT PLANNED RELEASED IN_PROGRESS COMPLETED CANCELLED }
-enum EvidenceType { PHOTO VIDEO SIGNATURE STAMP DOCUMENT BARCODE QR TEMPERATURE GPS NOTE }
-enum FiscalDocumentType { CFDI_INGRESO CFDI_TRASLADO CARTA_PORTE }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-model Organization { id String @id @default(cuid()) name String slug String @unique memberships Membership[] customers Customer[] vehicles Vehicle[] drivers Driver[] shipments Shipment[] routes Route[] createdAt DateTime @default(now()) }
-model User { id String @id @default(cuid()) email String @unique name String? memberships Membership[] createdAt DateTime @default(now()) }
-model Membership { id String @id @default(cuid()) organizationId String userId String role MembershipRole organization Organization @relation(fields:[organizationId],references:[id]) user User @relation(fields:[userId],references:[id]) @@unique([organizationId,userId]) }
-model Customer { id String @id @default(cuid()) organizationId String code String name String taxId String? organization Organization @relation(fields:[organizationId],references:[id]) shipments Shipment[] @@unique([organizationId,code]) }
-model Vehicle { id String @id @default(cuid()) organizationId String plate String label String capacityKg Decimal? organization Organization @relation(fields:[organizationId],references:[id]) routes Route[] @@unique([organizationId,plate]) }
-model Driver { id String @id @default(cuid()) organizationId String name String license String? organization Organization @relation(fields:[organizationId],references:[id]) routes Route[] }
-model Shipment { id String @id @default(cuid()) organizationId String customerId String reference String status ShipmentStatus @default(DRAFT) weightKg Decimal? volumeM3 Decimal? promisedAt DateTime? organization Organization @relation(fields:[organizationId],references:[id]) customer Customer @relation(fields:[customerId],references:[id]) stops Stop[] fiscalDocuments FiscalDocument[] createdAt DateTime @default(now()) @@unique([organizationId,reference]) }
-model Route { id String @id @default(cuid()) organizationId String code String status RouteStatus @default(DRAFT) vehicleId String? driverId String? organization Organization @relation(fields:[organizationId],references:[id]) vehicle Vehicle? @relation(fields:[vehicleId],references:[id]) driver Driver? @relation(fields:[driverId],references:[id]) stops Stop[] createdAt DateTime @default(now()) @@unique([organizationId,code]) }
-model Stop { id String @id @default(cuid()) routeId String? shipmentId String sequence Int? address String latitude Decimal? longitude Decimal? arrivedAt DateTime? completedAt DateTime? route Route? @relation(fields:[routeId],references:[id]) shipment Shipment @relation(fields:[shipmentId],references:[id]) evidence Evidence[] }
-model Evidence { id String @id @default(cuid()) stopId String type EvidenceType objectKey String? sha256 String? latitude Decimal? longitude Decimal? capturedAt DateTime @default(now()) stop Stop @relation(fields:[stopId],references:[id]) }
-model FiscalDocument { id String @id @default(cuid()) shipmentId String type FiscalDocumentType uuid String? idCcp String? status String @default("DRAFT") xmlObjectKey String? shipment Shipment @relation(fields:[shipmentId],references:[id]) createdAt DateTime @default(now()) }
+enum MembershipRole {
+  OWNER
+  ADMIN
+  PLANNER
+  DISPATCHER
+  DRIVER
+  FINANCE
+  AUDITOR
+  VIEWER
+}
+
+enum ShipmentStatus {
+  DRAFT
+  READY
+  PLANNED
+  LOADED
+  IN_TRANSIT
+  DELIVERED
+  PARTIAL
+  REJECTED
+  RETURNED
+  CANCELLED
+}
+
+enum RouteStatus {
+  DRAFT
+  PLANNED
+  RELEASED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EvidenceType {
+  PHOTO
+  VIDEO
+  SIGNATURE
+  STAMP
+  DOCUMENT
+  BARCODE
+  QR
+  TEMPERATURE
+  GPS
+  NOTE
+}
+
+enum FiscalDocumentType {
+  CFDI_INGRESO
+  CFDI_TRASLADO
+  CARTA_PORTE
+}
+
+model Organization {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  memberships Membership[]
+  customers   Customer[]
+  vehicles    Vehicle[]
+  drivers     Driver[]
+  shipments   Shipment[]
+  routes      Route[]
+  createdAt   DateTime     @default(now())
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String?
+  memberships Membership[]
+  createdAt   DateTime     @default(now())
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  organizationId String
+  userId         String
+  role           MembershipRole
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+
+  @@unique([organizationId, userId])
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  taxId          String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  shipments      Shipment[]
+
+  @@unique([organizationId, code])
+}
+
+model Vehicle {
+  id             String       @id @default(cuid())
+  organizationId String
+  plate          String
+  label          String
+  capacityKg     Decimal?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  routes         Route[]
+
+  @@unique([organizationId, plate])
+}
+
+model Driver {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  license        String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  routes         Route[]
+}
+
+model Shipment {
+  id              String           @id @default(cuid())
+  organizationId  String
+  customerId      String
+  reference       String
+  status          ShipmentStatus   @default(DRAFT)
+  weightKg        Decimal?
+  volumeM3        Decimal?
+  promisedAt      DateTime?
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  stops           Stop[]
+  fiscalDocuments FiscalDocument[]
+  createdAt       DateTime         @default(now())
+
+  @@unique([organizationId, reference])
+}
+
+model Route {
+  id             String       @id @default(cuid())
+  organizationId String
+  code           String
+  status         RouteStatus  @default(DRAFT)
+  vehicleId      String?
+  driverId       String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vehicle        Vehicle?     @relation(fields: [vehicleId], references: [id])
+  driver         Driver?      @relation(fields: [driverId], references: [id])
+  stops          Stop[]
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, code])
+}
+
+model Stop {
+  id          String     @id @default(cuid())
+  routeId     String?
+  shipmentId  String
+  sequence    Int?
+  address     String
+  latitude    Decimal?
+  longitude   Decimal?
+  arrivedAt   DateTime?
+  completedAt DateTime?
+  route       Route?     @relation(fields: [routeId], references: [id])
+  shipment    Shipment   @relation(fields: [shipmentId], references: [id])
+  evidence    Evidence[]
+}
+
+model Evidence {
+  id         String       @id @default(cuid())
+  stopId     String
+  type       EvidenceType
+  objectKey  String?
+  sha256     String?
+  latitude   Decimal?
+  longitude  Decimal?
+  capturedAt DateTime     @default(now())
+  stop       Stop         @relation(fields: [stopId], references: [id])
+}
+
+model FiscalDocument {
+  id           String             @id @default(cuid())
+  shipmentId   String
+  type         FiscalDocumentType
+  uuid         String?
+  idCcp        String?
+  status       String             @default("DRAFT")
+  xmlObjectKey String?
+  shipment     Shipment           @relation(fields: [shipmentId], references: [id])
+  createdAt    DateTime           @default(now())
+}
